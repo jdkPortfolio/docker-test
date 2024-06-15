@@ -15,7 +15,8 @@ RUN apt-get update && apt-get install -y \
     php \
     libapache2-mod-php \
     php-mysql \
-    unzip
+    unzip \
+    expect
 
 # Install MySQL
 RUN apt-get update && apt-get install -y mysql-server
@@ -23,18 +24,30 @@ RUN apt-get update && apt-get install -y mysql-server
 # Install phpMyAdmin
 RUN apt-get update && apt-get install -y phpmyadmin
 
-# Configure MySQL
-RUN service mysql start && \
-    mysql -e "CREATE USER 'root_ac'@'localhost' IDENTIFIED BY 'mypassword';" && \
-    mysql -e "GRANT ALL PRIVILEGES ON *.* TO 'root_ac'@'localhost' WITH GRANT OPTION;" && \
-    mysql -e "FLUSH PRIVILEGES;"
-
 # Configure phpMyAdmin
 RUN ln -s /usr/share/phpmyadmin /var/www/html/phpmyadmin
+
+# Create MySQL setup script
+RUN echo '#!/bin/bash\n\
+# Wait for MySQL to fully start\n\
+until mysqladmin ping -h localhost --silent; do\n\
+    echo "Waiting for MySQL to start..."\n\
+    sleep 2\n\
+done\n\
+# Create MySQL user and grant privileges\n\
+mysql -e "CREATE USER '\''myuser'\''@'\''localhost'\'' IDENTIFIED BY '\''mypassword'\'';"\n\
+mysql -e "GRANT ALL PRIVILEGES ON *.* TO '\''myuser'\''@'\''localhost'\'' WITH GRANT OPTION;"\n\
+mysql -e "FLUSH PRIVILEGES;"\n\
+# Allow remote connections (optional, remove if not needed)\n\
+mysql -e "CREATE USER '\''myuser'\''@'\''%'\'' IDENTIFIED BY '\''mypassword'\'';"\n\
+mysql -e "GRANT ALL PRIVILEGES ON *.* TO '\''myuser'\''@'\''%'\'' WITH GRANT OPTION;"\n\
+mysql -e "FLUSH PRIVILEGES;"' > /setup_mysql.sh \
+&& chmod +x /setup_mysql.sh
 
 # Create a script to start all services
 RUN echo '#!/bin/bash\n\
 service mysql start\n\
+/setup_mysql.sh\n\
 service apache2 start\n\
 tail -f /dev/null' > /start-services.sh \
 && chmod +x /start-services.sh
