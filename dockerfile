@@ -25,8 +25,8 @@ RUN apt-get update && apt-get install -y phpmyadmin
 
 # Configure MySQL
 RUN service mysql start && \
-    mysql -e "CREATE USER 'myuser'@'%' IDENTIFIED BY 'mypassword';" && \
-    mysql -e "GRANT ALL PRIVILEGES ON *.* TO 'myuser'@'%' WITH GRANT OPTION;" && \
+    mysql -e "CREATE USER 'root_ac'@'localhost' IDENTIFIED BY 'mypassword';" && \
+    mysql -e "GRANT ALL PRIVILEGES ON *.* TO 'root_ac'@'localhost' WITH GRANT OPTION;" && \
     mysql -e "FLUSH PRIVILEGES;"
 
 # Configure phpMyAdmin
